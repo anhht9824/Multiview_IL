@@ -1,0 +1,44 @@
+name: multiview_il
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.8
+  - pytorch=1.13.1
+  - torchvision=0.14.1
+  - torchaudio=0.13.1
+  - pytorch-cuda=11.6
+  - numpy=1.24.3
+  - pandas=1.1.5
+  - matplotlib=3.3.3
+  - scipy=1.10.1
+  - pip
+  - pip:
+    - tensorflow==2.11.0
+    - pytorch-lightning==1.4.6
+    - stable-baselines3
+    - opencv-python==4.2.0.34
+    - Pillow==8.4.0
+    - plotly==5.11.0
+    - tensorboard==2.11.2
+    - wandb
+    - omegaconf==2.2.0
+    - hydra-core==1.0.3
+    - PyYAML==5.4.1
+    - tqdm==4.64.1
+    - einops
+    - gym==0.24.0
+    - aiohttp==3.8.3
+    - requests==2.27.1
+    - click==7.0
+    - colorama==0.4.3
+    - packaging==21.3
+    - psutil==5.9.1
+    - tabulate==0.8.9
+    - absl-py==1.0.0
+    - cloudpickle==2.1.0
+    - protobuf==3.19.6
+    - grpcio==1.56.0
+    - ttach==0.0.3
