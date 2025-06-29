@@ -2,6 +2,7 @@ import os
 import torch
 import time
 import shutil
+import wandb
 from configs import g_conf, set_type_of_process, merge_with_yaml
 from network.models_console import Models
 from _utils.training_utils import seed_everything, DataParallelWrapper, check_saved_checkpoints, update_learning_rate
@@ -14,6 +15,24 @@ def train_upstream_task(model, optimizer):
     Upstream task is for training your model
 
     """
+    # Initialize Wandb for experiment tracking
+    wandb.init(
+        project="multiview_imitation_learning",
+        name=f"{g_conf.EXPERIMENT_BATCH_NAME}_{g_conf.EXPERIMENT_NAME}",
+        config={
+            "learning_rate": g_conf.LEARNING_RATE,
+            "batch_size": g_conf.BATCH_SIZE,
+            "epochs": g_conf.NUMBER_EPOCH,
+            "model_type": g_conf.MODEL_TYPE,
+            "data_used": g_conf.DATA_USED,
+            "targets": g_conf.TARGETS,
+            "encoder_input_frames": g_conf.ENCODER_INPUT_FRAMES_NUM,
+            "decoder_output_frames": g_conf.DECODER_OUTPUT_FRAMES_NUM,
+        },
+        tags=["imitation_learning", "multiview", "carla"]
+    )
+    
+
     early_stopping_flags = []
     acc_time = 0.0
     time_start = time.time()
@@ -65,22 +84,40 @@ def train_upstream_task(model, optimizer):
             time_start = time.time()
             """
             ################################################
-                Adding tensorboard logs
+                Adding tensorboard logs and Wandb logs
             #################################################
             """
+            # Tensorboard logging
             _logger.add_scalar('Loss', loss.item(), model._current_iteration)
 
             ## Adding loss to tensorboard
             _logger.add_scalar('Loss_steer', steer_loss.item(), model._current_iteration)
+            
+            # Wandb logging
+            wandb_log = {
+                'epoch': model._done_epoch,
+                'iteration': model._current_iteration,
+                'total_loss': loss.item(),
+                'steer_loss': steer_loss.item(),
+                'learning_rate': optimizer.param_groups[0]['lr']
+            }
+            
             if g_conf.ACCELERATION_AS_ACTION:
                 _logger.add_scalar('Loss_acceleration', acceleration_loss.item(), model._current_iteration)
+                wandb_log['acceleration_loss'] = acceleration_loss.item()
             else:
                 _logger.add_scalar('Loss_throttle', throttle_loss.item(), model._current_iteration)
                 _logger.add_scalar('Loss_brake', brake_loss.item(), model._current_iteration)
+                wandb_log['throttle_loss'] = throttle_loss.item()
+                wandb_log['brake_loss'] = brake_loss.item()
+            
+            # Log to wandb
+            wandb.log(wandb_log)
 
             if test_stop(g_conf.NUMBER_EPOCH*len(model), model._current_iteration * g_conf.BATCH_SIZE):
                 print('')
                 print('Training finished !!')
+                wandb.finish()  # Properly finish wandb run
                 break
             model._current_iteration += 1
             model._done_epoch = (model._current_iteration*g_conf.BATCH_SIZE // len(model))

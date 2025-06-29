@@ -3,6 +3,7 @@ import logging
 import time
 import torch
 import os
+import wandb
 from contextlib import contextmanager
 
 from _utils.utils import extract_targets, extract_commands, \
@@ -193,6 +194,16 @@ def evaluation_saving(model, optimizers, early_stopping_flags, save_all_checkpoi
                 if results_dict is not None:
                     write_model_results(g_conf.EXP_SAVE_PATH, model.name,
                                         results_dict, acc_as_action=g_conf.ACCELERATION_AS_ACTION)
+                    
+                    # Log evaluation results to wandb
+                    wandb_eval_log = {
+                        f"eval_{metric}": value 
+                        for metric, value in results_dict.items() 
+                        if isinstance(value, (int, float))
+                    }
+                    wandb_eval_log['eval_epoch'] = model._done_epoch
+                    wandb.log(wandb_eval_log)
+                    
                     draw_offline_evaluation_results(g_conf.EXP_SAVE_PATH, metrics_list=g_conf.EVAL_DRAW_OFFLINE_RESULTS_GRAPHS,
                                                     x_range=g_conf.EVAL_SAVE_EPOCHES)
                     is_better_flag, best_pred = save_model_if_better(results_dict, model, optimizers, save_all=save_all_checkpoints)
